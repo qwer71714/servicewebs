@@ -12,19 +12,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import OverallFirstRank from "./OverallFirstRank";
 
-const items = [
-  { label: "전체월드", value: null },
-  { label: "루나", value: "루나" },
-  { label: "엘리시움", value: "엘리시움" },
-  { label: "오로라", value: "오로라" },
-  { label: "노바", value: "노바" },
-  { label: "레드", value: "레드" },
-  { label: "크로아", value: "크로아" },
-  { label: "스카니아", value: "스카니아" },
-  { label: "베라", value: "베라" },
-  { label: "아케인", value: "아케인" },
-  { label: "이그니스", value: "이그니스" },
+/** 월드 셀렉트 옵션 (value는 API 쿼리 파라미터로 전달) */
+interface WorldOption {
+  label: string;
+  value: string;
+}
+
+const WORLD_NAMES = [
+  "루나", "엘리시움", "오로라", "노바", "레드",
+  "크로아", "스카니아", "베라", "아케인", "이그니스",
+] as const;
+
+const WORLD_OPTIONS: WorldOption[] = [
+  { label: "전체월드", value: "" },
+  ...WORLD_NAMES.map((name) => ({ label: name, value: name })),
 ];
 
 export default function MainPage() {
@@ -33,6 +36,7 @@ export default function MainPage() {
 
   return (
     <main className="flex flex-col items-center w-full text-center">
+      {/* 1. API 연동 안내 뱃지: 넥슨 Open API v1 실시간 데이터 동기화 상태 및 안내 표시 */}
       <section
         className="
             w-fit
@@ -52,6 +56,7 @@ export default function MainPage() {
         </div>
       </section>
 
+      {/* 2. 메인 헤더 & 서비스 소개: 서비스 타이틀(슬로건) 및 주요 조회 기능 설명 */}
       <section className="mt-12">
         <h1 className="text-6xl font-bold">
           메이플스토리 모험가와 길드의
@@ -69,11 +74,12 @@ export default function MainPage() {
         </div>
       </section>
 
+      {/* 3. 검색 대상 선택 스위치: 캐릭터 검색 / 길드 검색 모드 전환 탭 */}
       <section className="mt-12">
         <SearchModeSwitch value={searchMode} onValueChange={setSearchMode} />
       </section>
 
-      {/* 토스 스타일 통합 검색 바 */}
+      {/* 4. 통합 검색 바 영역: 월드(서버) 선택 셀렉트, 텍스트 입력 인풋, 검색 실행 버튼 및 안내 문구 */}
       <section className="mt-6 w-full max-w-[600px] px-4">
         <div
           className="
@@ -111,8 +117,8 @@ export default function MainPage() {
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>월드 선택</SelectLabel>
-                  {items.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
+                  {WORLD_OPTIONS.map((item) => (
+                    <SelectItem key={item.value || "전체월드"} value={item.value || "전체월드"}>
                       {item.label}
                     </SelectItem>
                   ))}
@@ -173,6 +179,11 @@ export default function MainPage() {
         <p className="mt-3 text-xs text-gray-400">
           대소문자를 구분하지 않습니다 · Enter로 검색
         </p>
+      </section>
+
+      {/* 5. 종합 랭킹 1위 배너: 실시간 종합 랭킹 1위 캐릭터 정보 표시 */}
+      <section className="mt-16 w-full max-w-[720px] px-4">
+        <OverallFirstRank />
       </section>
     </main>
   );
