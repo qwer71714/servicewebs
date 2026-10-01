@@ -1,4 +1,36 @@
+"use client";
+
+import { useState } from "react";
+import { SearchModeSwitch, SearchMode } from "./SearchModeSwitch";
+import { Search, ArrowRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const items = [
+  { label: "전체월드", value: null },
+  { label: "루나", value: "루나" },
+  { label: "엘리시움", value: "엘리시움" },
+  { label: "오로라", value: "오로라" },
+  { label: "노바", value: "노바" },
+  { label: "레드", value: "레드" },
+  { label: "크로아", value: "크로아" },
+  { label: "스카니아", value: "스카니아" },
+  { label: "베라", value: "베라" },
+  { label: "아케인", value: "아케인" },
+  { label: "이그니스", value: "이그니스" },
+];
+
 export default function MainPage() {
+  const [searchMode, setSearchMode] = useState<SearchMode>("character");
+  const [characterName, setCharacterName] = useState("");
+
   return (
     <main className="flex flex-col items-center w-full text-center">
       <section
@@ -37,59 +69,111 @@ export default function MainPage() {
         </div>
       </section>
 
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
+      <section className="mt-12">
+        <SearchModeSwitch value={searchMode} onValueChange={setSearchMode} />
+      </section>
+
+      {/* 토스 스타일 통합 검색 바 */}
+      <section className="mt-6 w-full max-w-[600px] px-4">
+        <div
+          className="
+            group
+            flex items-center
+            bg-white
+            rounded-2xl
+            border border-gray-200
+            shadow-[0_2px_12px_rgba(0,0,0,0.06)]
+            hover:shadow-[0_4px_24px_rgba(0,0,0,0.10)]
+            hover:border-gray-300
+            focus-within:shadow-[0_4px_24px_rgba(59,130,246,0.15)]
+            focus-within:border-blue-400
+            transition-all duration-300 ease-out
+            overflow-hidden
+          "
+        >
+          {/* 월드 셀렉트 영역 */}
+          <div className="flex items-center pl-4 shrink-0">
+            <Select>
+              <SelectTrigger
+                className="
+                  w-[120px] h-[52px]
+                  border-0 bg-transparent
+                  shadow-none
+                  ring-0 focus-visible:ring-0 focus-visible:border-0
+                  text-sm font-medium text-gray-700
+                  hover:text-gray-900
+                  transition-colors duration-200
+                  cursor-pointer
+                "
+              >
+                <SelectValue placeholder="전체 월드" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>월드 선택</SelectLabel>
+                  {items.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 구분선 */}
+          <div className="w-px h-6 bg-gray-200 shrink-0" />
+
+          {/* 검색 입력 영역 */}
+          <div className="flex items-center flex-1 gap-3 px-4">
+            <Search className="size-[18px] text-gray-400 shrink-0" />
+            <input
+              type="text"
+              value={characterName}
+              onChange={(e) => setCharacterName(e.target.value)}
+              placeholder={
+                searchMode === "character"
+                  ? "캐릭터 이름을 입력하세요"
+                  : "길드 이름을 입력하세요"
+              }
+              className="
+                flex-1 h-[52px]
+                bg-transparent
+                text-sm text-gray-900
+                placeholder:text-gray-400
+                outline-none border-none
+                caret-blue-500
+              "
+            />
+          </div>
+
+          {/* 검색 버튼 */}
+          <div className="pr-2 shrink-0">
+            <button
+              type="button"
+              className="
+                flex items-center justify-center
+                size-10
+                bg-blue-500
+                hover:bg-blue-600
+                active:bg-blue-700
+                active:scale-95
+                rounded-xl
+                text-white
+                transition-all duration-200 ease-out
+                cursor-pointer
+              "
+            >
+              <ArrowRight className="size-[18px]" />
+            </button>
+          </div>
+        </div>
+
+        {/* 하단 안내 텍스트 */}
+        <p className="mt-3 text-xs text-gray-400">
+          대소문자를 구분하지 않습니다 · Enter로 검색
+        </p>
+      </section>
     </main>
   );
 }
