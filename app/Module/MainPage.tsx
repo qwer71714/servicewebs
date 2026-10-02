@@ -15,7 +15,7 @@ import {
 import OverallFirstRank from "./OverallFirstRank";
 import { useRouter } from "next/navigation";
 import { MapleCharacterSearchState } from "../types/mapleCharacterTypes";
-import { getCharacterId } from "@/app/actions/mapleCharacter";
+import { searchCharacter } from "@/lib/client/searchCharacter";
 
 /** 월드 셀렉트 옵션 (value는 API 쿼리 파라미터로 전달) */
 interface WorldOption {
@@ -43,7 +43,7 @@ export default function MainPage() {
 
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(
-    getCharacterId,
+    searchCharacter,
     initialState,
   );
 

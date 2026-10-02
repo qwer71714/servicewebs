@@ -18,7 +18,8 @@ export default async function CharacterPage({
         notFound();
     }
 
-    const decodedName = decodeURIComponent(characterName);
+    // Next.js has already decoded route parameters, including literal % signs.
+    const decodedName = characterName.trim();
 
     const result = await getCharacterOcidByName(decodedName);
 

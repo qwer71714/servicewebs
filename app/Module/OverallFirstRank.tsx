@@ -16,18 +16,24 @@ export default function OverallFirstRank() {
         let cancelled = false;
 
         async function loadRanking() {
-            const result = await getOverallFirstRank();
+            try {
+                const result = await getOverallFirstRank();
 
-            if (cancelled) return;
+                if (cancelled) return;
 
-            if (!result.success || !result.ranking) {
-                setError(result.error ?? "랭킹 조회에 실패했습니다.");
-                setIsLoading(false);
-                return;
+                if (!result.success || !result.ranking) {
+                    setError(result.error ?? "랭킹 조회에 실패했습니다.");
+                    return;
+                }
+
+                setRanking(result.ranking);
+            } catch {
+                if (!cancelled) {
+                    setError("랭킹을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+                }
+            } finally {
+                if (!cancelled) setIsLoading(false);
             }
-
-            setRanking(result.ranking);
-            setIsLoading(false);
         }
 
         void loadRanking();
