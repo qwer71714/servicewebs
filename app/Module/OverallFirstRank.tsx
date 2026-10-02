@@ -42,13 +42,13 @@ export default function OverallFirstRank() {
         return (
             <div
                 className="
-          w-full rounded-2xl
-          border border-gray-100
-          bg-white
-          px-8 py-6
-          flex items-center justify-center gap-3
-          text-sm text-gray-400
-        "
+                    w-full rounded-2xl
+                    border border-gray-100
+                    bg-white
+                    px-8 py-6
+                    flex items-center justify-center gap-3
+                    text-sm text-gray-400
+                "
             >
                 <Loader2 className="size-4 animate-spin" />
                 종합 랭킹을 불러오는 중입니다

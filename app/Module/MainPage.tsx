@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { SearchModeSwitch, SearchMode } from "./SearchModeSwitch";
 import { Search, ArrowRight } from "lucide-react";
 import {
@@ -13,6 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import OverallFirstRank from "./OverallFirstRank";
+import { useRouter } from "next/navigation";
+import { MapleCharacterSearchState } from "../types/mapleCharacterTypes";
+import { getCharacterId } from "@/app/actions/mapleCharacter";
 
 /** 월드 셀렉트 옵션 (value는 API 쿼리 파라미터로 전달) */
 interface WorldOption {
@@ -30,9 +33,40 @@ const WORLD_OPTIONS: WorldOption[] = [
   ...WORLD_NAMES.map((name) => ({ label: name, value: name })),
 ];
 
+const initialState: MapleCharacterSearchState = {
+  success: false,
+};
+
 export default function MainPage() {
   const [searchMode, setSearchMode] = useState<SearchMode>("character");
   const [characterName, setCharacterName] = useState("");
+
+  const router = useRouter();
+  const [state, formAction, isPending] = useActionState(
+    getCharacterId,
+    initialState,
+  );
+
+  useEffect(() => {
+    if (
+      state.success &&
+      state.ocid &&
+      state.characterName
+    ) {
+      const characterName = encodeURIComponent(
+        state.characterName,
+      );
+
+      router.push(
+        `/maplestory/character/${characterName}`,
+      );
+    }
+  }, [
+    state.success,
+    state.ocid,
+    state.characterName,
+    router,
+  ]);
 
   return (
     <main className="flex flex-col items-center w-full text-center">
@@ -81,44 +115,52 @@ export default function MainPage() {
 
       {/* 4. 통합 검색 바 영역: 월드(서버) 선택 셀렉트, 텍스트 입력 인풋, 검색 실행 버튼 및 안내 문구 */}
       <section className="mt-6 w-full max-w-[600px] px-4">
-        <div
+        <form
+          action={formAction}
           className="
             group
             flex items-center
-            bg-white
+            overflow-hidden
             rounded-2xl
             border border-gray-200
+            bg-white
             shadow-[0_2px_12px_rgba(0,0,0,0.06)]
-            hover:shadow-[0_4px_24px_rgba(0,0,0,0.10)]
-            hover:border-gray-300
-            focus-within:shadow-[0_4px_24px_rgba(59,130,246,0.15)]
-            focus-within:border-blue-400
             transition-all duration-300 ease-out
-            overflow-hidden
+            hover:border-gray-300
+            hover:shadow-[0_4px_24px_rgba(0,0,0,0.10)]
+            focus-within:border-blue-400
+            focus-within:shadow-[0_4px_24px_rgba(59,130,246,0.15)]
           "
         >
-          {/* 월드 셀렉트 영역 */}
-          <div className="flex items-center pl-4 shrink-0">
-            <Select>
+          {/* 월드 선택 */}
+          <div className="flex shrink-0 items-center pl-4">
+            <Select defaultValue="전체월드">
               <SelectTrigger
                 className="
-                  w-[120px] h-[52px]
-                  border-0 bg-transparent
-                  shadow-none
-                  ring-0 focus-visible:ring-0 focus-visible:border-0
-                  text-sm font-medium text-gray-700
-                  hover:text-gray-900
-                  transition-colors duration-200
+                  h-[52px] w-[120px]
                   cursor-pointer
+                  border-0 bg-transparent
+                  text-sm font-medium text-gray-700
+                  shadow-none
+                  ring-0
+                  transition-colors duration-200
+                  hover:text-gray-900
+                  focus-visible:border-0
+                  focus-visible:ring-0
                 "
               >
                 <SelectValue placeholder="전체 월드" />
               </SelectTrigger>
+
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>월드 선택</SelectLabel>
+
                   {WORLD_OPTIONS.map((item) => (
-                    <SelectItem key={item.value || "전체월드"} value={item.value || "전체월드"}>
+                    <SelectItem
+                      key={item.value || "전체월드"}
+                      value={item.value || "전체월드"}
+                    >
                       {item.label}
                     </SelectItem>
                   ))}
@@ -128,54 +170,71 @@ export default function MainPage() {
           </div>
 
           {/* 구분선 */}
-          <div className="w-px h-6 bg-gray-200 shrink-0" />
+          <div className="h-6 w-px shrink-0 bg-gray-200" />
 
-          {/* 검색 입력 영역 */}
-          <div className="flex items-center flex-1 gap-3 px-4">
-            <Search className="size-[18px] text-gray-400 shrink-0" />
+          {/* 검색 입력 */}
+          <div className="flex flex-1 items-center gap-3 px-4">
+            <Search className="size-[18px] shrink-0 text-gray-400" />
+
             <input
+              name="characterName"
+              disabled={isPending}
               type="text"
               value={characterName}
-              onChange={(e) => setCharacterName(e.target.value)}
+              onChange={(event) =>
+                setCharacterName(event.target.value)
+              }
               placeholder={
                 searchMode === "character"
                   ? "캐릭터 이름을 입력하세요"
                   : "길드 이름을 입력하세요"
               }
               className="
-                flex-1 h-[52px]
-                bg-transparent
-                text-sm text-gray-900
-                placeholder:text-gray-400
-                outline-none border-none
-                caret-blue-500
-              "
+          h-[52px] min-w-0 flex-1
+          border-none bg-transparent
+          text-sm text-gray-900
+          caret-blue-500 outline-none
+          placeholder:text-gray-400
+        "
             />
           </div>
 
           {/* 검색 버튼 */}
-          <div className="pr-2 shrink-0">
+          <div className="shrink-0 pr-2">
             <button
-              type="button"
+              disabled={
+                isPending ||
+                !characterName.trim() ||
+                searchMode !== "character"
+              }
+              type="submit"
               className="
-                flex items-center justify-center
-                size-10
-                bg-blue-500
-                hover:bg-blue-600
-                active:bg-blue-700
-                active:scale-95
-                rounded-xl
-                text-white
-                transition-all duration-200 ease-out
-                cursor-pointer
-              "
+          flex size-10 cursor-pointer
+          items-center justify-center
+          rounded-xl bg-blue-500
+          text-white
+          transition-all duration-200 ease-out
+          hover:bg-blue-600
+          active:scale-95
+          active:bg-blue-700
+          disabled:cursor-not-allowed
+          disabled:opacity-50
+        "
             >
               <ArrowRight className="size-[18px]" />
             </button>
           </div>
-        </div>
+        </form>
 
-        {/* 하단 안내 텍스트 */}
+        {state.error && (
+          <p
+            role="alert"
+            className="mt-3 text-sm text-red-500"
+          >
+            {state.error}
+          </p>
+        )}
+
         <p className="mt-3 text-xs text-gray-400">
           대소문자를 구분하지 않습니다 · Enter로 검색
         </p>
@@ -185,6 +244,6 @@ export default function MainPage() {
       <section className="mt-16 w-full max-w-[720px] px-4">
         <OverallFirstRank />
       </section>
-    </main>
+    </main >
   );
 }
