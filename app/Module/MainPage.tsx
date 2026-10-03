@@ -16,21 +16,21 @@ import OverallFirstRank from "./OverallFirstRank";
 import { useRouter } from "next/navigation";
 import { MapleCharacterSearchState } from "../types/mapleCharacterTypes";
 import { searchCharacter } from "@/lib/client/searchCharacter";
+import {
+  ALL_MAPLE_WORLDS,
+  MAPLE_WORLDS,
+  type MapleWorld,
+} from "@/lib/nexon/worlds";
 
 /** 월드 셀렉트 옵션 (value는 API 쿼리 파라미터로 전달) */
 interface WorldOption {
   label: string;
-  value: string;
+  value: MapleWorld | typeof ALL_MAPLE_WORLDS;
 }
 
-const WORLD_NAMES = [
-  "루나", "엘리시움", "오로라", "노바", "레드",
-  "크로아", "스카니아", "베라", "아케인", "이그니스",
-] as const;
-
 const WORLD_OPTIONS: WorldOption[] = [
-  { label: "전체월드", value: "" },
-  ...WORLD_NAMES.map((name) => ({ label: name, value: name })),
+  { label: "전체 월드", value: ALL_MAPLE_WORLDS },
+  ...MAPLE_WORLDS.map((name) => ({ label: name, value: name })),
 ];
 
 const initialState: MapleCharacterSearchState = {
@@ -40,6 +40,9 @@ const initialState: MapleCharacterSearchState = {
 export default function MainPage() {
   const [searchMode, setSearchMode] = useState<SearchMode>("character");
   const [characterName, setCharacterName] = useState("");
+  const [worldName, setWorldName] = useState<WorldOption["value"]>(
+    ALL_MAPLE_WORLDS,
+  );
 
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(
@@ -57,14 +60,20 @@ export default function MainPage() {
         state.characterName,
       );
 
-      router.push(
-        `/maplestory/character/${characterName}`,
-      );
+      const query = new URLSearchParams();
+
+      if (state.worldName) {
+        query.set("worldName", state.worldName);
+      }
+
+      const search = query.size > 0 ? `?${query.toString()}` : "";
+      router.push(`/maplestory/character/${characterName}${search}`);
     }
   }, [
     state.success,
     state.ocid,
     state.characterName,
+    state.worldName,
     router,
   ]);
 
@@ -134,7 +143,17 @@ export default function MainPage() {
         >
           {/* 월드 선택 */}
           <div className="flex shrink-0 items-center pl-4">
-            <Select defaultValue="전체월드">
+            <input
+              type="hidden"
+              name="worldName"
+              value={worldName === ALL_MAPLE_WORLDS ? "" : worldName}
+            />
+            <Select
+              value={worldName}
+              onValueChange={(value) => {
+                if (value) setWorldName(value);
+              }}
+            >
               <SelectTrigger
                 className="
                   h-[52px] w-[120px]
@@ -158,8 +177,8 @@ export default function MainPage() {
 
                   {WORLD_OPTIONS.map((item) => (
                     <SelectItem
-                      key={item.value || "전체월드"}
-                      value={item.value || "전체월드"}
+                      key={item.value}
+                      value={item.value}
                     >
                       {item.label}
                     </SelectItem>

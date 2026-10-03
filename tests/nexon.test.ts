@@ -5,6 +5,7 @@ import { getOverallFirstRank } from "../app/actions/mapleOverallFirstRank";
 import { getCharacterBasicByOcid } from "../lib/nexon/getCharacterBasicByOcid";
 import { getCharacterOcidByName } from "../lib/nexon/getCharacterOcidByName";
 import { decodeRouteSegment } from "../lib/routing/decodeRouteSegment";
+import { MAPLE_WORLDS } from "../lib/nexon/worlds";
 
 const originalApiKey = process.env.NEXON_OPEN_API_KEY;
 const originalVercelEnv = process.env.VERCEL_ENV;
@@ -106,6 +107,39 @@ test("empty and file-valued character searches never call the API", async () => 
     assert.equal(result.success, false);
   }
   assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test("character search preserves a valid world filter", async () => {
+  mock.method(globalThis, "fetch", async () => Response.json({ ocid: "test-ocid" }));
+  const form = new FormData();
+  form.set("characterName", "레인보우");
+  form.set("worldName", "루나");
+
+  assert.deepEqual(await getCharacterId({ success: false }, form), {
+    success: true,
+    ocid: "test-ocid",
+    characterName: "레인보우",
+    worldName: "루나",
+  });
+});
+
+test("invalid world filters are rejected before calling the API", async () => {
+  const fetchMock = mock.method(globalThis, "fetch");
+  for (const worldName of ["이그니스", "전체월드", new Blob(["루나"])]) {
+    const form = new FormData();
+    form.set("characterName", "레인보우");
+    form.set("worldName", worldName);
+    assert.equal((await getCharacterId({ success: false }, form)).success, false);
+  }
+  assert.equal(fetchMock.mock.callCount(), 0);
+});
+
+test("world options match the official Nexon API values", () => {
+  assert.deepEqual(MAPLE_WORLDS, [
+    "스카니아", "베라", "루나", "제니스", "크로아", "유니온",
+    "엘리시움", "이노시스", "레드", "오로라", "아케인", "노바",
+    "에오스", "핼리오스", "챌린저스", "챌린저스2", "챌린저스3", "챌린저스4",
+  ]);
 });
 
 test("route segments are decoded exactly once without crashing on literal percent signs", () => {

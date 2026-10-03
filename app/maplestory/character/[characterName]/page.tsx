@@ -2,24 +2,39 @@ import { notFound } from "next/navigation";
 
 import { getCharacterOcidByName } from "@/lib/nexon/getCharacterOcidByName"
 import { getCharacterBasicByOcid } from "@/lib/nexon/getCharacterBasicByOcid";
+import { isMapleWorld, type MapleWorld } from "@/lib/nexon/worlds";
 import { decodeRouteSegment } from "@/lib/routing/decodeRouteSegment";
 
 interface CharacterPageProps {
     params: Promise<{
         characterName: string;
     }>;
+    searchParams: Promise<{
+        worldName?: string | string[];
+    }>;
 }
 
 export default async function CharacterPage({
     params,
+    searchParams,
 }: CharacterPageProps) {
     const { characterName } = await params;
+    const { worldName: requestedWorldName } = await searchParams;
 
     if (!characterName) {
         notFound();
     }
 
     const decodedName = decodeRouteSegment(characterName);
+    let selectedWorld: MapleWorld | undefined;
+
+    if (requestedWorldName !== undefined) {
+        if (Array.isArray(requestedWorldName) || !isMapleWorld(requestedWorldName)) {
+            notFound();
+        }
+
+        selectedWorld = requestedWorldName;
+    }
 
     const result = await getCharacterOcidByName(decodedName);
 
@@ -55,10 +70,24 @@ export default async function CharacterPage({
 
     const character = basicResult.data;
 
+    if (selectedWorld && character.world_name !== selectedWorld) {
+        return (
+            <main className="mx-auto max-w-2xl px-5 py-14">
+                <h1 className="text-2xl font-bold tracking-tight">
+                    {selectedWorld} 월드에서 캐릭터를 찾지 못했습니다
+                </h1>
+
+                <p className="mt-4 text-[15px] text-gray-500">
+                    {decodedName} 캐릭터는 {character.world_name} 월드에 있습니다.
+                </p>
+            </main>
+        );
+    }
+
     return (
         <main className="mx-auto max-w-2xl px-5 py-14">
             <p className="text-[13px] font-medium text-gray-400">
-                메이플스토리 캐릭터 정보
+                메이플스토리 캐릭터 정보 · {selectedWorld ?? "전체 월드"}
             </p>
 
             <h1 className="mt-1.5 text-[28px] font-black tracking-tight text-gray-900">

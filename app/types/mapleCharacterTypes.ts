@@ -1,3 +1,5 @@
+import type { MapleWorld } from "@/lib/nexon/worlds";
+
 export interface MapleCharacterIdResponse {
     ocid: string;
 }
@@ -6,6 +8,7 @@ export interface MapleCharacterSearchState {
     success: boolean;
     ocid?: string;
     characterName?: string;
+    worldName?: MapleWorld;
     error?: string;
 }
 
