@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { getCharacterOcidByName } from "@/lib/nexon/getCharacterOcidByName"
 import { getCharacterBasicByOcid } from "@/lib/nexon/getCharacterBasicByOcid";
+import { decodeRouteSegment } from "@/lib/routing/decodeRouteSegment";
 
 interface CharacterPageProps {
     params: Promise<{
@@ -18,8 +19,7 @@ export default async function CharacterPage({
         notFound();
     }
 
-    // Next.js has already decoded route parameters, including literal % signs.
-    const decodedName = characterName.trim();
+    const decodedName = decodeRouteSegment(characterName);
 
     const result = await getCharacterOcidByName(decodedName);
 

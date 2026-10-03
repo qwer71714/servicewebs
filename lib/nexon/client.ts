@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isProductionDeployment, isTestApiKey } from "./apiKey";
+
 export type NexonResult<T> =
   | { success: true; data: T }
   | { success: false; error: string };
@@ -20,6 +22,16 @@ export async function fetchNexon<T>(
     };
   }
 
+  if (isTestApiKey(apiKey)) {
+    if (isProductionDeployment()) {
+      console.error("A test Nexon API key cannot be used in Production.");
+      return {
+        success: false,
+        error: "운영 환경에 유효한 넥슨 API 키가 필요합니다.",
+      };
+    }
+  }
+
   try {
     const response = await fetch(
       `https://open.api.nexon.com/maplestory/v1/${path}?${new URLSearchParams(params)}`,
@@ -37,10 +49,13 @@ export async function fetchNexon<T>(
     );
 
     if (!response.ok) {
-      console.error("Nexon API request failed:", { path, status: response.status });
+      const errorBody = await response.text().catch(() => "");
+      console.error("Nexon API request failed:", { path, status: response.status, body: errorBody });
       return {
         success: false,
-        error: response.status === 429
+        error: response.status === 400
+          ? "잘못된 요청입니다. 캐릭터 이름을 확인해주세요."
+          : response.status === 429
           ? "조회 요청이 많습니다. 잠시 후 다시 시도해주세요."
           : `정보 조회에 실패했습니다. (${response.status})`,
       };

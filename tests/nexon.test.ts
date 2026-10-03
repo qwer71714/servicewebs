@@ -4,8 +4,10 @@ import { getCharacterId } from "../app/actions/mapleCharacter";
 import { getOverallFirstRank } from "../app/actions/mapleOverallFirstRank";
 import { getCharacterBasicByOcid } from "../lib/nexon/getCharacterBasicByOcid";
 import { getCharacterOcidByName } from "../lib/nexon/getCharacterOcidByName";
+import { decodeRouteSegment } from "../lib/routing/decodeRouteSegment";
 
 const originalApiKey = process.env.NEXON_OPEN_API_KEY;
+const originalVercelEnv = process.env.VERCEL_ENV;
 const character = {
   date: null,
   character_name: "테스트",
@@ -34,7 +36,8 @@ const ranking = {
 
 beforeEach(() => {
   process.env.NEXON_OPEN_API_KEY = "test-key";
-  mock.method(console, "error", () => {});
+  delete process.env.VERCEL_ENV;
+  mock.method(console, "error", () => { });
   // An unexpected network call must fail the test rather than hit the real API.
   mock.method(globalThis, "fetch", async () => {
     throw new Error("Unexpected network request");
@@ -45,6 +48,41 @@ afterEach(() => {
   mock.restoreAll();
   if (originalApiKey === undefined) delete process.env.NEXON_OPEN_API_KEY;
   else process.env.NEXON_OPEN_API_KEY = originalApiKey;
+  if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
+  else process.env.VERCEL_ENV = originalVercelEnv;
+});
+
+for (const prefix of ["tes_", "test_"]) {
+  test(`${prefix} keys call the real API outside Production`, async () => {
+    process.env.NEXON_OPEN_API_KEY = `${prefix}local`;
+    const fetchMock = mock.method(
+      globalThis,
+      "fetch",
+      async (_url: RequestInfo | URL, options?: RequestInit) => {
+        assert.equal(
+          new Headers(options?.headers).get("x-nxopen-api-key"),
+          `${prefix}local`,
+        );
+        return Response.json({ ocid: "real-api-ocid" });
+      },
+    );
+
+    assert.deepEqual(await getCharacterOcidByName("아무캐릭터"), {
+      success: true,
+      ocid: "real-api-ocid",
+    });
+    assert.equal(fetchMock.mock.callCount(), 1);
+  });
+}
+
+test("test-prefixed keys cannot be used in Production", async () => {
+  process.env.NEXON_OPEN_API_KEY = "test_local";
+  process.env.VERCEL_ENV = "production";
+  const fetchMock = mock.method(globalThis, "fetch");
+
+  const result = await getCharacterOcidByName("테스트");
+  assert.equal(result.success, false);
+  assert.equal(fetchMock.mock.callCount(), 0);
 });
 
 test("missing or blank API keys return a safe error without fetching", async () => {
@@ -70,6 +108,16 @@ test("empty and file-valued character searches never call the API", async () => 
   assert.equal(fetchMock.mock.callCount(), 0);
 });
 
+test("route segments are decoded exactly once without crashing on literal percent signs", () => {
+  assert.equal(
+    decodeRouteSegment("%EB%A0%88%EC%9D%B8%EB%B3%B4%EC%9A%B0"),
+    "레인보우",
+  );
+  assert.equal(decodeRouteSegment("레인보우"), "레인보우");
+  assert.equal(decodeRouteSegment("%2525"), "%25");
+  assert.equal(decodeRouteSegment("캐릭터%"), "캐릭터%");
+});
+
 test("character search encodes input, trims it and keeps the API key server-side", async () => {
   const fetchMock = mock.method(globalThis, "fetch", async (url: RequestInfo | URL, options?: RequestInit) => {
     assert.equal(new URL(String(url)).searchParams.get("character_name"), "테스트%&");
@@ -92,7 +140,14 @@ for (const status of [400, 401, 403, 404, 429, 500, 503]) {
     const result = await getCharacterOcidByName("테스트");
     assert.equal(result.success, false);
     if (!result.success) {
-      assert.match(result.error, status === 429 ? /요청이 많습니다/ : new RegExp(String(status)));
+      assert.match(
+        result.error,
+        status === 400
+          ? /잘못된 요청/
+          : status === 429
+            ? /요청이 많습니다/
+            : new RegExp(String(status)),
+      );
     }
   });
 }
